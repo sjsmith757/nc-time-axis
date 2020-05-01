@@ -96,8 +96,8 @@ class NetCDFTimeDateLocator(mticker.Locator):
         self.max_n_ticks = max_n_ticks
         self.min_n_ticks = min_n_ticks
         self._max_n_locator = mticker.MaxNLocator(max_n_ticks, integer=True)
-        self._max_n_locator_days = mticker.MaxNLocator(
-            max_n_ticks, integer=True, steps=[1, 2, 4, 7, 10])
+#         self._max_n_locator_days = mticker.MaxNLocator(
+#             max_n_ticks, integer=True, steps=[1, 2, 4, 7, 10])
         self.calendar = calendar
         self.date_unit = date_unit
         if not self.date_unit.lower().startswith('days since'):
@@ -136,6 +136,9 @@ class NetCDFTimeDateLocator(mticker.Locator):
     def __call__(self):
         vmin, vmax = self.axis.get_view_interval()
         return self.tick_values(vmin, vmax)
+    
+    def set_params(self, **kwargs):
+        self._max_n_locator.set_params(kwargs)
 
     def tick_values(self, vmin, vmax):
         vmin, vmax = mtransforms.nonsingular(vmin, vmax, expander=1e-7,
@@ -165,7 +168,9 @@ class NetCDFTimeDateLocator(mticker.Locator):
                 ticks.append(cftime.datetime(int(year), int(month), 1))
         elif resolution == 'DAILY':
             # TODO: It would be great if this favoured multiples of 7.
-            days = self._max_n_locator_days.tick_values(vmin, vmax)
+            # update MaxNLocator directly instead of creating two instances -- sjs 4/30/2020
+            self._max_n_locator.set_params(steps=[1, 2, 4, 7, 10])
+            days = self._max_n_locator.tick_values(vmin, vmax)
             ticks = [utime.num2date(dt) for dt in days]
         elif resolution == 'HOURLY':
             hour_unit = 'hours since 2000-01-01'
